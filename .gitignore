@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Model weights / precomputed features
+*.pt
+*.pth
+weights/
+
+# Attention maps / diffs / datasets (not distributed)
+attn_maps/
+diff/
+data/
+genimage/
+COCO/
+
+# Generated outputs
+*.png
+
+# OS
+.DS_Store
