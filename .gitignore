@@ -15,7 +15,7 @@ weights/
 # Attention maps / diffs / datasets (not distributed)
 attn_maps/
 diff/
-data/
+/data/
 genimage/
 COCO/
 
