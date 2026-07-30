@@ -85,8 +85,10 @@ tre-diffusion-image-detection/
 │   │   └── resnet_baseline.py    # ResNet18_4ch, AttentionClassifier (baseline)
 │   ├── train.py                  # fit() loop, optimizer, checkpoint save
 │   └── eval.py                   # acc(), ap() per-generator + mean, plots
-├── notebooks/                    # original notebooks kept as demos
+├── results/
+│   └── notebook_reference/       # figures + logs preserved from the original notebooks
 ├── docs/                         # project report (PDF)
+├── RESULTS.md
 ├── requirements.txt
 └── README.md
 ```
@@ -161,6 +163,10 @@ match whatever your precomputed `.pt` features actually contain.
 
 ### Reproducibility
 
-No metrics or results are reported here — see the project report in `docs/` for
-the experiments run by the authors. Data, precomputed features, and trained
-weights are not distributed with this repository.
+This pipeline needs a pretrained Stable Diffusion model, the GenImage /
+ForenSynths benchmarks, and a GPU — data, precomputed features, and trained
+weights are **not distributed** with this repository, so the experiments are
+**not re-run here**. The original notebooks have been removed; their figures
+(attention/TRE visualizations, sample outputs) and logs are preserved under
+`results/notebook_reference/` — see [RESULTS.md](RESULTS.md). The project report
+in `docs/` covers the authors' full experiments.

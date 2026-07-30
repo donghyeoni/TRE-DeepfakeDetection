@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
 
+# Virtual environment
+.venv/
+venv/
+
 # Model weights / precomputed features
 *.pt
 *.pth
@@ -15,8 +19,9 @@ data/
 genimage/
 COCO/
 
-# Generated outputs
+# Generated outputs (but keep committed results/ artifacts)
 *.png
+!results/**
 
 # OS
 .DS_Store

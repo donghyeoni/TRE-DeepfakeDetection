@@ -1,0 +1,30 @@
+[cell 00 stream stdout]
+cuda:0
+
+[cell 02 stream stdout]
+323997
+12000
+12000
+12000
+12000
+12000
+16000
+12000
+12000
+
+[cell 03 result]
+Loading pipeline components...:   0%|          | 0/7 [00:00<?, ?it/s]
+[cell 07 stream stdout]
+torch.Size([4, 32, 32])
+torch.Size([20, 4, 32, 32])
+
+[cell 08 stream stdout]
+1000
+
+[cell 09 stream stdout]
+1000
+
+[cell 10 result]
+  0%|          | 0/1000 [00:00<?, ?it/s]
+[cell 10 stream stdout]
+Saved: /home/mplab/datasets/diff/test/sdv4/fake/image0.pt
