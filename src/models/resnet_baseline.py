@@ -95,8 +95,9 @@ class AttentionClassifier(nn.Module):
         T_out = self.temporal.attn_blocks(xt)                   # [B*H*W, T, C]
         T_last = T_out[:, -1, :].view(B, H, W, C)               # [B, H, W, C]
 
-        # Spatial attention
-        F_prime = self.spatial(x)                          # [B, H, W, 1] (broadcast)
+        # Spatial attention. SpatialFocusing expects [B, T, H, W]; average the
+        # latent channels to produce the per-pixel focusing weights.
+        F_prime = self.spatial(x.mean(dim=2))              # [B, H, W, 1] (broadcast)
 
         T_final = T_last * F_prime                         # [B, H, W, C]
         return self.classifier(T_final)                    # [B, num_classes]

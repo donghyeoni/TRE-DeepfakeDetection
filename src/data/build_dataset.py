@@ -57,7 +57,13 @@ def build(images_dir, out_dir, limit=None, num_inference_steps=config.NUM_INFERE
             )
         diffs = torch.stack(step_diffs, dim=0)
 
-        save_dir = os.path.join(out_dir, config.LABEL_MAP[label])
+        # Map by the ImageFolder class *name*, not its numeric index: GenImage
+        # class dirs sort as ["ai", "nature"], so index 0 is "ai" (fake) --
+        # indexing LABEL_MAP by number would save fakes under real/ and
+        # vice versa.
+        class_name = dataset.classes[label]
+        folder = {"ai": "fake", "nature": "real"}.get(class_name, class_name)
+        save_dir = os.path.join(out_dir, folder)
         save_path = os.path.join(save_dir, f"image{idx}.pt")
         torch.save(diffs.cpu(), save_path)
 
