@@ -1,0 +1,48 @@
+{
+ "condition": "paper-faithful (edit-friendly inversion, recorded z_t replayed during reconstruction)",
+ "train": "GenImage sdv1.4 train, 30000 fake + 30000 real (seed 42), 20 epochs",
+ "model": "temporal MHSA (embed 4, 4 heads, 2 layers) x spatial focusing -> ResNet18-4ch, CE, Adam 1e-4, batch 16",
+ "per_generator": {
+  "adm": {
+   "n": 12000,
+   "acc": 0.5443,
+   "ap": 0.5413
+  },
+  "biggan": {
+   "n": 12000,
+   "acc": 0.5467,
+   "ap": 0.5597
+  },
+  "glide": {
+   "n": 12000,
+   "acc": 0.5807,
+   "ap": 0.5931
+  },
+  "midjourney": {
+   "n": 12000,
+   "acc": 0.5502,
+   "ap": 0.5522
+  },
+  "sdv4": {
+   "n": 12000,
+   "acc": 0.6145,
+   "ap": 0.6421
+  },
+  "sdv5": {
+   "n": 16000,
+   "acc": 0.6216,
+   "ap": 0.6478
+  },
+  "vqdm": {
+   "n": 12000,
+   "acc": 0.5623,
+   "ap": 0.5622
+  },
+  "wukong": {
+   "n": 12000,
+   "acc": 0.598,
+   "ap": 0.623
+  }
+ },
+ "mean_acc": 0.5773
+}
