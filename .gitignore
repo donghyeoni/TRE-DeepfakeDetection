@@ -1,7 +1,6 @@
 # Python
 __pycache__/
 *.py[cod]
-.ipynb_checkpoints/
 
 # Virtual environment
 .venv/
@@ -12,16 +11,15 @@ venv/
 *.pth
 weights/
 
-# Attention maps / diffs / datasets (not distributed)
-attn_maps/
-diff/
+# Datasets and extracted features (not distributed)
 /data/
+features/
+features_fresh/
 genimage/
 COCO/
 
-# Generated outputs (but keep committed results/ artifacts)
+# Generated figures
 *.png
-!results/**
 
 # OS
 .DS_Store

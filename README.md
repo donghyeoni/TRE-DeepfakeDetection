@@ -2,171 +2,128 @@
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg) ![PyTorch](https://img.shields.io/badge/PyTorch-2.x-ee4c2c.svg)
 
-Detecting AI-generated images with a **Temporal Reconstruction Error (TRE)**
-feature and a **temporal / spatial attention** classifier (DNSAMNet).
+Detecting AI-generated images from the **Temporal Reconstruction Error (TRE)**
+of a diffusion model, classified by temporal / spatial attention.
 
-## Overview
+This repository holds the code, the **full-scale re-run of the experiment**, and
+the analysis of what the method actually measures. The headline finding is
+negative and is the point of the repository: as formulated, the TRE feature
+carries no usable signal, and we show why.
 
-This project targets **generative-model image detection** — telling apart real
-photographs from images produced by generative models (diffusion models, GANs,
-etc.). Despite the "deepfake" name used throughout the original code, the
-datasets are **generated-image benchmarks (GenImage / ForenSynths), not
-face-swap deepfakes**.
+## Results
 
-The core idea:
+GenImage. Train: SDv1.4, 30k fake + 30k real (seed 42), 20 epochs. Evaluation:
+all 8 generators, full test splits (12k each, 16k for sdv5). Identical
+classifier and hyperparameters in both conditions — the only difference is how
+the reconstruction is driven.
 
-1. Run **DDPM/DDIM inversion** with a pretrained Stable Diffusion model: encode
-   an image into a latent, invert it to noise, then reconstruct it step by step.
-2. Record how the latent changes across denoising timesteps. The sequence of
-   **step-wise differences is the Temporal Reconstruction Error (TRE)** — a
-   `(T, D, H, W)` tensor (feature convention `(B, T=20, D=8, H, W)`).
-3. Classify the TRE sequence as real/fake with **DNSAMNet**, which combines
-   temporal attention (over the `T=20` axis) and spatial attention (a focusing
-   map over `H×W`), fuses them multiplicatively, and feeds an MLP classifier.
+| Condition | Train acc | Held-out val acc | **Mean acc (8 generators)** |
+| --- | --- | --- | --- |
+| **A. Replayed noise** (as originally formulated) | 78.7% | 63.5% | **57.7%** |
+| **B. Fresh common noise** (attempted fix) | 96.3% | 50.7% | **50.1%** |
 
-Real and generated images leave different fingerprints in how well a diffusion
-model can reconstruct them across timesteps; the attention classifier learns to
-read that signal.
+Per generator (accuracy / AP), raw numbers in
+[`results/repro.json`](results/repro.json) and [`results/fresh.json`](results/fresh.json):
 
-## Method
+| Generator | A: replayed | B: fresh |
+| --- | --- | --- |
+| sdv4 (in-domain) | 61.5% / 0.642 | 50.1% / 0.503 |
+| sdv5 | 62.2% / 0.648 | 50.7% / 0.504 |
+| wukong | 59.8% / 0.623 | 50.1% / 0.505 |
+| glide | 58.1% / 0.593 | 50.5% / 0.504 |
+| vqdm | 56.2% / 0.562 | 50.4% / 0.503 |
+| midjourney | 55.0% / 0.552 | 50.1% / 0.499 |
+| biggan | 54.7% / 0.560 | 49.3% / 0.490 |
+| adm | 54.4% / 0.541 | 49.9% / 0.499 |
 
-- **Diffusion inversion** (`src/data/inversion.py`): edit-friendly DDPM/DDIM
-  inversion — `inversion_forward_process` records the noise sequence, and
-  `inversion_reverse_process` reconstructs from it.
-- **TRE features** (`src/data/tre_features.py`): `over_denosing()` reconstructs
-  the image step by step and returns the `T` step-wise latent differences.
-- **DNSAMNet** (`src/models/`):
-  - `attention.py` — hand-written multi-head self-attention (`MHSA`, `MHSABlock`).
-  - `temporal_attention.py` — `TemporalAggregation` (attention over `T`).
-  - `spatial_attention.py` — `SpatialFocusing` (pool → conv stack → attention →
-    spatial map).
-  - `dnsamnet.py` — `Classifier` + `TSC` (Temporal × Spatial → Classifier).
-  - `resnet_baseline.py` — an earlier `nn.MultiheadAttention` + ResNet-18
-    baseline, kept for reference.
+**Condition A barely beats chance even in-domain (61.5%)** and drops to 54-60%
+on unseen generators. **Condition B is exactly chance everywhere** while fitting
+the training set to 96%.
 
-## Dataset
+## Why: the feature collapses either way
 
-Data is **not included** in this repository, and neither are the precomputed
-`.pt` TRE features nor the trained weights. Download the source datasets from
-their official releases:
+The pipeline uses *edit-friendly* DDPM inversion, which records, for every step,
+the noise `z_t` that makes the reverse process land exactly on the pre-sampled
+`x_{t-1}`. TRE is then defined as the difference between reconstructions started
+from different prefixes of that noise sequence.
 
-- **GenImage** — https://github.com/GenImage-Dataset/GenImage
-  Generators used here: `sdv1.4`, `sdv1.5`, `adm`, `biggan`, `glide`,
-  `midjourney`, `vqdm`, `wukong`.
-- **ForenSynths** (CNNDetection) — https://github.com/PeterWang512/CNNDetection
+- **Replaying `z_t`** (condition A) makes every prefix reconstruct the *same*
+  latent by construction, so the difference is mathematically zero. What remains
+  is GPU floating-point non-determinism: measured `std ~ 2.7e-4` against a latent
+  scale of ~1. The weak in-domain signal is that residue's image-dependent
+  pattern, which is why it does not transfer across generators.
+- **Injecting fresh noise** (condition B) makes prefixes genuinely differ, but
+  the variance term `sigma_t * eps_t` dominates: prefixes of different length
+  accumulate a different number of such terms, so the difference is driven by the
+  image's random draw rather than by how well the model explains the image. The
+  classifier memorises the draw (96% train) and transfers nothing.
 
-Expected on-disk layout (override roots via `src/config.py` or environment
-variables `GENIMAGE_ROOT` / `TRE_FEATURE_ROOT`):
+Either way the stochastic reverse process destroys the quantity the method
+intends to measure. Full derivation, measurements and follow-up directions:
+[`docs/finding-tre-collapse.md`](docs/finding-tre-collapse.md) and
+[`docs/ideas-generalization.md`](docs/ideas-generalization.md).
+
+Baseline numbers (STRE, NPR, DIRE, LaRE) are **not reproduced here**; cite them
+from their original papers, noting protocol differences.
+
+## Method / code layout
+
+1. **Diffusion inversion** ([`src/data/inversion.py`](src/data/inversion.py)) —
+   edit-friendly DDPM/DDIM inversion: `inversion_forward_process` records the
+   noise sequence, `inversion_reverse_process` reconstructs from it.
+2. **TRE features** ([`src/data/tre_features.py`](src/data/tre_features.py)) —
+   `over_denosing()` reconstructs prefix by prefix and returns the `T` step-wise
+   latent differences, a `(T=20, 4, 32, 32)` tensor per image.
+3. **Classifiers** ([`src/models/`](src/models)) — `resnet_baseline.py` holds the
+   temporal-MHSA x spatial-focusing -> ResNet18 detector used in both conditions;
+   `dnsamnet.py` / `attention.py` / `temporal_attention.py` /
+   `spatial_attention.py` hold the hand-written attention variant (DNSAMNet),
+   which needs a different feature type (U-Net attention maps) and is untested.
 
 ```
-<GENIMAGE_ROOT>/sdv1.4/train/<class>/*.png     # training images (real/fake)
-<GENIMAGE_ROOT>/<generator>/val/<class>/*.png  # evaluation images
-
-<TRE_FEATURE_ROOT>/train/<class>/*.pt          # precomputed TRE features
-<TRE_FEATURE_ROOT>/test/<generator>/<class>/*.pt
+├── src/                  # library: inversion, TRE features, datasets, models
+├── experiments/          # the full-scale re-run harness (multi-GPU, orchestrated)
+├── results/              # measured accuracy/AP per generator, both conditions
+└── docs/                 # analysis of the collapse, follow-up ideas, project report
 ```
 
-## Repository structure
+## Reproducing
 
-```
-tre-diffusion-image-detection/
-├── src/
-│   ├── config.py                 # dataset roots, generators, SD model id, T/steps, batch, lr
-│   ├── data/
-│   │   ├── inversion.py          # DDPM/DDIM inversion core (consolidated from 3 notebooks)
-│   │   ├── tre_features.py       # over_denosing() -> step-wise latent diffs (TRE)
-│   │   ├── build_dataset.py      # CLI: iterate images, extract TRE, save .pt
-│   │   └── dataset.py            # transforms, LatentDiffDataset, ImageFolder/DatasetFolder builders
-│   ├── models/
-│   │   ├── attention.py          # MHSA, MHSABlock
-│   │   ├── temporal_attention.py # TemporalAggregation
-│   │   ├── spatial_attention.py  # SpatialFocusing
-│   │   ├── dnsamnet.py           # Classifier + TSC (full model)
-│   │   └── resnet_baseline.py    # ResNet18_4ch, AttentionClassifier (baseline)
-│   ├── train.py                  # fit() loop, optimizer, checkpoint save
-│   └── eval.py                   # acc(), ap() per-generator + mean, plots
-├── results/
-│   └── notebook_reference/       # figures + logs preserved from the original notebooks
-├── docs/                         # project report (PDF)
-├── RESULTS.md
-├── requirements.txt
-└── README.md
-```
-
-## Setup
+Data is not included. Download GenImage from its
+[official release](https://github.com/GenImage-Dataset/GenImage) (an HF mirror of
+the same archives exists at `jzousz/GenImage`), then see
+[`experiments/README.md`](experiments/README.md) for the exact pipeline:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+python experiments/build_lists.py                       # train/test file lists
+python experiments/extract_tre.py --list ... --out ...  # add --fresh for condition B
+python experiments/train_eval.py --features ...         # train + per-generator eval
 ```
 
-A CUDA-capable GPU is strongly recommended — diffusion inversion is the
-bottleneck of the pipeline.
+Feature extraction is the bottleneck: the prefix construction costs 250 UNet
+calls per image (~0.83 img/s per L40S at batch 48), i.e. roughly 20 GPU-hours
+per condition for the 160k images. Precomputed `.pt` features and trained
+weights are not distributed.
 
-## Usage
+Environment: Python 3.11, torch 2.3.1+cu121, torchvision 0.18.1,
+diffusers 0.31.0, transformers 4.44.2, numpy<2. Features are computed in fp32
+and stored as fp16 — condition A's signal lives at the 1e-4 level, so lowering
+the compute precision destroys it.
 
-Run modules from the repository root so package imports resolve.
+## Fixed while re-running
 
-1. **Build TRE features** from a folder of images:
+Both bugs were latent because the original notebooks never completed a run:
 
-   ```bash
-   python -m src.data.build_dataset \
-       --images data/genimage/sdv1.4/val \
-       --out data/tre_features/test/sdv4 \
-       --limit 1000
-   ```
+- `AttentionClassifier` passed a 5-D `(B,T,C,H,W)` tensor to `SpatialFocusing`,
+  which unpacks four dimensions — now the channel axis is averaged first.
+- `build_dataset.py` wrote features to the wrong class directory: GenImage class
+  dirs sort as `[ai, nature]`, so indexing `LABEL_MAP` by the numeric label put
+  fakes under `real/` and vice versa — now mapped by class name.
 
-2. **Train** the detector on the precomputed features:
+Also: accuracy thresholding at `> 0` on a sigmoid output (always true) was
+corrected to `> 0.5`; `SpatialFocusing` referenced an undefined `num_head`;
+hard-coded machine paths moved to `src/config.py`.
 
-   ```bash
-   python -m src.train --epochs 100 --lr 1e-5 --checkpoint weights/DNSAM_new.pt
-   ```
+## Contributors
 
-3. **Evaluate** accuracy and Average Precision per generator:
-
-   ```bash
-   python -m src.eval --checkpoint weights/DNSAM_new.pt
-   ```
-
-## Notes
-
-### Bugs fixed during modularization
-
-- **Accuracy threshold**: the model outputs a sigmoid probability, but the
-  notebooks thresholded predictions at `> 0` (always true). Training and
-  evaluation now threshold at `> 0.5`.
-- **`SpatialFocusing` undefined name**: the notebook referenced `num_head`
-  inside `SpatialFocusing.__init__` where the argument was `num_heads`, raising a
-  `NameError`. Fixed to use `num_heads`.
-- **`TREClassifier` name error**: a test cell instantiated the non-existent
-  `TREClassifier`; the class is `TSC`.
-- **Checkpoint filename typo**: `Attn_cocnat.pt` → `Attn_concat.pt` (the save
-  and load paths disagreed).
-- **Hard-coded paths**: machine-specific paths (`/home/rmlab`, `/home/mplab`,
-  `/home/dh/venv`, Colab Drive) were replaced with values in `src/config.py`.
-
-### Canonical module choice
-
-There were three divergent copies of `TemporalAggregation` / `SpatialFocusing`
-in `DNSAMNet.ipynb` (cells ~17/20/38) plus an `nn.MultiheadAttention`-based
-prototype in `LoadDataset.ipynb`. The **cell-38 variant** (residual FFN blocks +
-convolutional stack) is used as canonical in `src/models/`. The
-`nn.MultiheadAttention` prototype is preserved in `resnet_baseline.py`.
-
-### Feature-shape note
-
-The DNSAMNet classifier operates on `(B, T=20, D=8, H=16, W=16)` tensors. The
-raw Stable Diffusion latent produced by `over_denosing` has `D=4` channels at
-`32×32`. Set `FEATURE_DIM` / `FEATURE_H` / `FEATURE_W` in `src/config.py` to
-match whatever your precomputed `.pt` features actually contain.
-
-### Reproducibility
-
-This pipeline needs a pretrained Stable Diffusion model, the GenImage /
-ForenSynths benchmarks, and a GPU — data, precomputed features, and trained
-weights are **not distributed** with this repository, so the experiments are
-**not re-run here**. The original notebooks have been removed; their figures
-(attention/TRE visualizations, sample outputs) and logs are preserved under
-`results/notebook_reference/` — see [RESULTS.md](RESULTS.md). The project report
-in `docs/` covers the authors' full experiments.
+- [donghyeoni](https://github.com/donghyeoni)
