@@ -18,8 +18,9 @@ features_fresh/
 genimage/
 COCO/
 
-# Generated figures
+# Generated figures (the README embeds the ones under assets/)
 *.png
+!assets/*.png
 
 # OS
 .DS_Store
