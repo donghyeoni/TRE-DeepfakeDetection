@@ -19,20 +19,34 @@ the reconstruction is driven.
 | --- | --- | --- | --- |
 | **A. Replayed noise** (as originally formulated) | 78.7% | 63.5% | **57.7%** |
 | **B. Fresh common noise** (attempted fix) | 96.3% | 50.7% | **50.1%** |
+| **C. Deterministic, η = 0** | — | 80.9% | **60.5%** |
 
-Per generator, raw numbers in [`results/repro.json`](results/repro.json) and
-[`results/fresh.json`](results/fresh.json):
+Scheme C is the one that measures something real, but the mean hides the actual
+result — it splits sharply by generator family:
 
-| | sdv4 (in-domain) | sdv5 | adm | biggan | glide | midjourney | vqdm | wukong | **mean** |
+| Scheme C, grouped | Mean acc |
+| --- | --- |
+| Stable-Diffusion-derived (sdv4, sdv5, wukong) — same family as the inverting model | **78.8%** |
+| Everything else (adm, biggan, glide, midjourney, vqdm) | **49.5%** |
+
+Per generator, raw numbers in [`results/repro.json`](results/repro.json),
+[`results/fresh.json`](results/fresh.json) and [`results/eta0.json`](results/eta0.json).
+The three SD-derived generators are marked ◆:
+
+| | sdv4 ◆ (in-domain) | sdv5 ◆ | wukong ◆ | adm | biggan | glide | midjourney | vqdm | **mean** |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| A: replayed — acc | 61.5 | 62.2 | 54.4 | 54.7 | 58.1 | 55.0 | 56.2 | 59.8 | **57.7** |
-| A: replayed — AP | .642 | .648 | .541 | .560 | .593 | .552 | .562 | .623 | — |
-| B: fresh — acc | 50.1 | 50.7 | 49.9 | 49.3 | 50.5 | 50.1 | 50.4 | 50.1 | **50.1** |
-| B: fresh — AP | .503 | .504 | .499 | .490 | .504 | .499 | .503 | .505 | — |
+| A: replayed — acc | 61.5 | 62.2 | 59.8 | 54.4 | 54.7 | 58.1 | 55.0 | 56.2 | **57.7** |
+| A: replayed — AP | .642 | .648 | .623 | .541 | .560 | .593 | .552 | .562 | — |
+| B: fresh — acc | 50.1 | 50.7 | 50.1 | 49.9 | 49.3 | 50.5 | 50.1 | 50.4 | **50.1** |
+| B: fresh — AP | .503 | .504 | .505 | .499 | .490 | .504 | .499 | .503 | — |
+| C: η = 0 — acc | **78.5** | **79.2** | **78.5** | 50.6 | 39.8 | 49.1 | 54.8 | 53.3 | **60.5** |
+| C: η = 0 — AP | **.863** | **.869** | **.861** | .510 | .360 | .481 | .560 | .542 | — |
 
 **Condition A barely beats chance even in-domain (61.5%)** and drops to 54-60%
 on unseen generators. **Condition B is exactly chance everywhere** while fitting
-the training set to 96%.
+the training set to 96%. **Condition C works — but only inside the Stable
+Diffusion family**: 78-79% with AP 0.86 on sdv4/sdv5/wukong, chance elsewhere
+(biggan at 39.8% is below chance, i.e. anti-correlated).
 
 ## Why: the feature collapses either way
 
@@ -74,13 +88,25 @@ intends to measure. Full derivation, measurements and follow-up directions:
 [`docs/finding-tre-collapse.md`](docs/finding-tre-collapse.md) and
 [`docs/ideas-generalization.md`](docs/ideas-generalization.md).
 
-**In progress — scheme C (`η = 0`).** Removing the stochastic term entirely
-leaves the prefix differences to reflect only DDIM inversion error, i.e. how
-accurately the model can round-trip the image. First measurements on 16 images:
-the feature magnitude rises ~500x over scheme A (std 0.20 vs 2·10⁻⁴) and real
-photographs show a **17% larger** error than generated ones — the direction
-DIRE/LaRE-style detectors rely on. The full-scale run is under way; numbers will
-land in `results/eta0.json`.
+**Scheme C (`η = 0`) — the feature works, the generalisation does not.**
+Dropping the stochastic term leaves the prefix differences to reflect only DDIM
+inversion error, i.e. how accurately the model round-trips the image. The feature
+magnitude rises ~500x over scheme A (std 0.20 vs 2·10⁻⁴), and real photographs
+carry a ~17% larger error than generated ones — the direction DIRE/LaRE-style
+detectors rely on. At full scale that turns into a genuine detector for images
+made by the *same model family as the inverter* (SD v1.4): 78-79% accuracy at
+AP 0.86 on sdv4, sdv5 and wukong, and the held-out validation accuracy reaches
+80.9%.
+
+Outside that family it collapses to chance, and on biggan it inverts (39.8%,
+AP 0.36) — a GAN's latents are not something an SD inverter round-trips the way
+it does its own samples, so the learned direction points the wrong way. So the
+three schemes fail for three different reasons: A has no signal, B has signal
+buried in noise, C has signal that is specific to one generator family. Chasing
+general detection from a single inverter's reconstruction error therefore looks
+like the wrong axis — see
+[`docs/ideas-generalization.md`](docs/ideas-generalization.md) for the directions
+that remain.
 
 Baseline numbers (STRE, NPR, DIRE, LaRE) are **not reproduced here**; cite them
 from their original papers, noting protocol differences.

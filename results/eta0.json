@@ -1,0 +1,62 @@
+{
+ "condition": "deterministic (eta=0): DDIM inversion, variance-free reverse; prefix differences reflect inversion/reconstruction error only",
+ "train": "GenImage sdv1.4, 30000 fake + 30000 real (seed 42), 20 epochs",
+ "model": "temporal MHSA (embed 4, 4 heads, 2 layers) x spatial focusing -> ResNet18-4ch, CE, Adam 1e-4, batch 16",
+ "training": {
+  "best_val_acc": 0.8089,
+  "note": "held-out split of the sdv1.4 training pool"
+ },
+ "extraction": {
+  "servers": 2,
+  "gpus": "8 x L40S",
+  "note": "sdv4/sdv5 extracted on jupyter05, the other six generators on jupyter07; identical code and file lists (order fingerprints verified equal)"
+ },
+ "per_generator": {
+  "adm": {
+   "n": 12000,
+   "acc": 0.5065,
+   "ap": 0.5103
+  },
+  "biggan": {
+   "n": 12000,
+   "acc": 0.3977,
+   "ap": 0.3603
+  },
+  "glide": {
+   "n": 12000,
+   "acc": 0.4913,
+   "ap": 0.4809
+  },
+  "midjourney": {
+   "n": 12000,
+   "acc": 0.5475,
+   "ap": 0.5596
+  },
+  "sdv4": {
+   "n": 12000,
+   "acc": 0.785,
+   "ap": 0.8634
+  },
+  "sdv5": {
+   "n": 16000,
+   "acc": 0.7924,
+   "ap": 0.8685
+  },
+  "vqdm": {
+   "n": 12000,
+   "acc": 0.5329,
+   "ap": 0.542
+  },
+  "wukong": {
+   "n": 12000,
+   "acc": 0.7853,
+   "ap": 0.8608
+  }
+ },
+ "mean_acc": 0.6048,
+ "summary": {
+  "stable_diffusion_family_mean_acc": 0.7876,
+  "other_architectures_mean_acc": 0.4952,
+  "note": "sdv4/sdv5/wukong are Stable-Diffusion-derived, i.e. the same family as the inverting model (SD v1.4); adm/biggan/glide/midjourney/vqdm are not"
+ }
+}
