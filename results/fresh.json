@@ -1,0 +1,53 @@
+{
+ "condition": "fresh-noise (reconstruction driven by a pre-drawn common random noise sequence instead of the recorded z_t)",
+ "train": "GenImage sdv1.4 train, 30000 fake + 30000 real (seed 42), 20 epochs",
+ "model": "temporal MHSA (embed 4, 4 heads, 2 layers) x spatial focusing -> ResNet18-4ch, CE, Adam 1e-4, batch 16",
+ "training": {
+  "final_train_acc": 0.9625,
+  "best_val_acc": 0.5072,
+  "note": "train accuracy climbs to 96% while held-out accuracy stays at chance -- the classifier memorises the per-image noise draw"
+ },
+ "per_generator": {
+  "adm": {
+   "n": 12000,
+   "acc": 0.4985,
+   "ap": 0.4987
+  },
+  "biggan": {
+   "n": 12000,
+   "acc": 0.4934,
+   "ap": 0.4899
+  },
+  "glide": {
+   "n": 12000,
+   "acc": 0.505,
+   "ap": 0.504
+  },
+  "midjourney": {
+   "n": 12000,
+   "acc": 0.5013,
+   "ap": 0.4989
+  },
+  "sdv4": {
+   "n": 12000,
+   "acc": 0.5007,
+   "ap": 0.5034
+  },
+  "sdv5": {
+   "n": 16000,
+   "acc": 0.5065,
+   "ap": 0.5036
+  },
+  "vqdm": {
+   "n": 12000,
+   "acc": 0.5037,
+   "ap": 0.5027
+  },
+  "wukong": {
+   "n": 12000,
+   "acc": 0.5009,
+   "ap": 0.5049
+  }
+ },
+ "mean_acc": 0.5012
+}
