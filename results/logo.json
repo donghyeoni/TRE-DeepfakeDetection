@@ -1,0 +1,50 @@
+{
+ "experiment": "leave-one-generator-out on the eta=0 (scheme C) features",
+ "question": "is scheme C's family bias a training artefact (sdv1.4-only training) or a property of the feature itself?",
+ "protocol": "classifier trained on five generators' test-half features (first half of each class, 30k total), evaluated on the sixth generator it never saw; same architecture and hyperparameters as every other run",
+ "runs": {
+  "adm": {
+   "train_generators": ["biggan", "glide", "midjourney", "vqdm", "wukong"],
+   "train_size": 30000,
+   "val_acc_on_trained": 0.5311,
+   "held_out": {"n": 12000, "acc": 0.5227, "ap": 0.527}
+  },
+  "biggan": {
+   "train_generators": ["adm", "glide", "midjourney", "vqdm", "wukong"],
+   "train_size": 30000,
+   "val_acc_on_trained": 0.54,
+   "held_out": {"n": 12000, "acc": 0.5304, "ap": 0.5343}
+  },
+  "glide": {
+   "train_generators": ["adm", "biggan", "midjourney", "vqdm", "wukong"],
+   "train_size": 30000,
+   "val_acc_on_trained": 0.5182,
+   "held_out": {"n": 12000, "acc": 0.5304, "ap": 0.5353}
+  },
+  "midjourney": {
+   "train_generators": ["adm", "biggan", "glide", "vqdm", "wukong"],
+   "train_size": 30000,
+   "val_acc_on_trained": 0.5344,
+   "held_out": {"n": 12000, "acc": 0.5338, "ap": 0.5383}
+  },
+  "vqdm": {
+   "train_generators": ["adm", "biggan", "glide", "midjourney", "wukong"],
+   "train_size": 30000,
+   "val_acc_on_trained": 0.5818,
+   "held_out": {"n": 12000, "acc": 0.4797, "ap": 0.4882}
+  },
+  "wukong": {
+   "train_generators": ["adm", "biggan", "glide", "midjourney", "vqdm"],
+   "train_size": 30000,
+   "val_acc_on_trained": 0.5279,
+   "held_out": {"n": 12000, "acc": 0.5037, "ap": 0.5039}
+  }
+ },
+ "mean_held_out_acc": 0.5168,
+ "observations": [
+  "held-out accuracy is chance for every generator (48.0-53.4%), so training diversity does not create transfer",
+  "validation accuracy on the five TRAINED generators is also only 51.8-58.2% -- mixing generators destroys even the in-domain fit that single-family training had",
+  "wukong (SD-family) drops from 78.5% under sdv1.4-only training to 50.4% when the five non-SD generators form the training set: the SD signal must come from SD-family training data, not from other generators",
+  "conclusion: the family bias is a property of the eta=0 feature (it encodes how well the SD1.4 inverter round-trips the image), not an artefact of the original training composition"
+ ]
+}
