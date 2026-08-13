@@ -1,7 +1,5 @@
 # TRE Diffusion Image Detection
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg) ![PyTorch](https://img.shields.io/badge/PyTorch-2.x-ee4c2c.svg)
-
 Detecting AI-generated images from the **Temporal Reconstruction Error (TRE)**
 of a diffusion model, classified by temporal / spatial attention.
 
@@ -123,7 +121,3 @@ Both bugs were latent because the original notebooks never completed a run:
 Also: accuracy thresholding at `> 0` on a sigmoid output (always true) was
 corrected to `> 0.5`; `SpatialFocusing` referenced an undefined `num_head`;
 hard-coded machine paths moved to `src/config.py`.
-
-## Contributors
-
-- [donghyeoni](https://github.com/donghyeoni)
