@@ -20,25 +20,38 @@ the reconstruction is driven.
 | **A. Replayed noise** (as originally formulated) | 78.7% | 63.5% | **57.7%** |
 | **B. Fresh common noise** (attempted fix) | 96.3% | 50.7% | **50.1%** |
 
-Per generator (accuracy / AP), raw numbers in
-[`results/repro.json`](results/repro.json) and [`results/fresh.json`](results/fresh.json):
+Per generator, raw numbers in [`results/repro.json`](results/repro.json) and
+[`results/fresh.json`](results/fresh.json):
 
-| Generator | A: replayed | B: fresh |
-| --- | --- | --- |
-| sdv4 (in-domain) | 61.5% / 0.642 | 50.1% / 0.503 |
-| sdv5 | 62.2% / 0.648 | 50.7% / 0.504 |
-| wukong | 59.8% / 0.623 | 50.1% / 0.505 |
-| glide | 58.1% / 0.593 | 50.5% / 0.504 |
-| vqdm | 56.2% / 0.562 | 50.4% / 0.503 |
-| midjourney | 55.0% / 0.552 | 50.1% / 0.499 |
-| biggan | 54.7% / 0.560 | 49.3% / 0.490 |
-| adm | 54.4% / 0.541 | 49.9% / 0.499 |
+| | sdv4 (in-domain) | sdv5 | adm | biggan | glide | midjourney | vqdm | wukong | **mean** |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| A: replayed — acc | 61.5 | 62.2 | 54.4 | 54.7 | 58.1 | 55.0 | 56.2 | 59.8 | **57.7** |
+| A: replayed — AP | .642 | .648 | .541 | .560 | .593 | .552 | .562 | .623 | — |
+| B: fresh — acc | 50.1 | 50.7 | 49.9 | 49.3 | 50.5 | 50.1 | 50.4 | 50.1 | **50.1** |
+| B: fresh — AP | .503 | .504 | .499 | .490 | .504 | .499 | .503 | .505 | — |
 
 **Condition A barely beats chance even in-domain (61.5%)** and drops to 54-60%
 on unseen generators. **Condition B is exactly chance everywhere** while fitting
 the training set to 96%.
 
 ## Why: the feature collapses either way
+
+All three schemes share one skeleton — encode, walk the latent to noise,
+reconstruct from every prefix, take the differences of consecutive
+reconstructions. They differ only in the stochasticity coefficient `η` and in
+what fills the noise slot of a reverse step:
+
+![the three TRE schemes](assets/tre-schemes.svg)
+
+The same input image, put through all three: the feature is a float-level
+residue in A, pure noise in B, and structured reconstruction error in C.
+
+![TRE feature under the three schemes](assets/tre-conditions.png)
+
+*Input image: ImageNet ILSVRC2012 validation sample (real photograph),
+distributed as the `nature` split of the GenImage benchmark. Heatmaps show the
+channel mean of the TRE tensor; note the per-row scale annotation — A's range is
+~10⁻⁴ while B's is ~1.*
 
 The pipeline uses *edit-friendly* DDPM inversion, which records, for every step,
 the noise `z_t` that makes the reverse process land exactly on the pre-sampled
@@ -60,6 +73,14 @@ Either way the stochastic reverse process destroys the quantity the method
 intends to measure. Full derivation, measurements and follow-up directions:
 [`docs/finding-tre-collapse.md`](docs/finding-tre-collapse.md) and
 [`docs/ideas-generalization.md`](docs/ideas-generalization.md).
+
+**In progress — scheme C (`η = 0`).** Removing the stochastic term entirely
+leaves the prefix differences to reflect only DDIM inversion error, i.e. how
+accurately the model can round-trip the image. First measurements on 16 images:
+the feature magnitude rises ~500x over scheme A (std 0.20 vs 2·10⁻⁴) and real
+photographs show a **17% larger** error than generated ones — the direction
+DIRE/LaRE-style detectors rely on. The full-scale run is under way; numbers will
+land in `results/eta0.json`.
 
 Baseline numbers (STRE, NPR, DIRE, LaRE) are **not reproduced here**; cite them
 from their original papers, noting protocol differences.

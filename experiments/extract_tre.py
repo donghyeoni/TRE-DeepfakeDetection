@@ -13,7 +13,7 @@ from torchvision import transforms
 
 sys.path.insert(0, "/home/j-i15a204/tre/repo")
 from src import config
-from src.data.inversion import get_variance, reverse_step
+from src.data.inversion import forward_step, get_variance, reverse_step
 
 DEVICE = torch.device("cuda:0")
 T = 20
@@ -71,6 +71,36 @@ def forward_zs(pipe, x0, xts, uncond):
     return zs
 
 @torch.no_grad()
+def ddim_forward_traj(pipe, x0, uncond):
+    """Deterministic DDIM inversion x0 -> x_T, keeping every intermediate.
+
+    The repo's eta=0 branch in inversion_forward_process is unusable (it leaves
+    xts undefined and walks the timesteps in descending order), so the standard
+    ascending-timestep DDIM inversion is implemented here.
+    """
+    ts = pipe.scheduler.timesteps.to(DEVICE)
+    xts = torch.zeros((T + 1,) + tuple(x0.shape), device=DEVICE)
+    xts[0] = x0
+    xt = x0
+    for i, t in enumerate(reversed(ts)):
+        noise_pred = pipe.unet(xt, t, encoder_hidden_states=uncond).sample
+        xt = forward_step(pipe, noise_pred, t, xt)
+        xts[i + 1] = xt
+    return xts
+
+
+@torch.no_grad()
+def reverse_from_det(pipe, xT, k, uncond):
+    """Deterministic (eta=0) reverse: no variance term at all."""
+    ts = pipe.scheduler.timesteps.to(DEVICE)
+    xt = xT
+    for t in ts[-k:]:
+        noise_pred = pipe.unet(xt, t, encoder_hidden_states=uncond).sample
+        xt = reverse_step(pipe, noise_pred, t, xt, eta=0.0)
+    return xt
+
+
+@torch.no_grad()
 def reverse_from(pipe, xT, noise, k, uncond):
     ts = pipe.scheduler.timesteps.to(DEVICE)
     sub = ts[-k:]
@@ -83,8 +113,20 @@ def reverse_from(pipe, xT, noise, k, uncond):
     return xt
 
 @torch.no_grad()
-def tre_batch(pipe, imgs, uncond, fresh=False):
+def tre_batch(pipe, imgs, uncond, fresh=False, eta0=False):
     x0 = pipe.vae.encode(imgs * 2 - 1).latent_dist.sample() * config.VAE_SCALING_FACTOR
+    if eta0:
+        # Fully deterministic round trip: the prefix differences reflect only how
+        # well the model can invert/reconstruct this image (DIRE/LaRE-style signal
+        # resolved along the timestep axis).
+        xts = ddim_forward_traj(pipe, x0, uncond)
+        lat_prev = reverse_from_det(pipe, xts[T], T, uncond).cpu()
+        diffs = []
+        for step in range(T):
+            lat = reverse_from_det(pipe, xts[step + 1], step + 1, uncond).cpu()
+            diffs.append(lat_prev - lat)
+            lat_prev = lat
+        return torch.stack(diffs, dim=1)
     xts = sample_xts(pipe, x0)
     if fresh:
         noise = torch.randn((T,) + tuple(x0.shape), device=DEVICE)
@@ -107,6 +149,7 @@ def main():
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--nshards", type=int, default=1)
     ap.add_argument("--fresh", action="store_true")
+    ap.add_argument("--eta0", action="store_true")
     args = ap.parse_args()
 
     items = [l.strip().split("\t") for l in open(args.list) if l.strip()]
@@ -135,7 +178,7 @@ def main():
                 print("SKIP", p, e, flush=True); imgs.append(torch.zeros(3, 256, 256))
         batch = torch.stack(imgs).to(DEVICE)
         uncond = uncond_full[: len(chunk)]
-        feats = tre_batch(pipe, batch, uncond, fresh=args.fresh)
+        feats = tre_batch(pipe, batch, uncond, fresh=args.fresh, eta0=args.eta0)
         for j, (p, lbl, dst) in enumerate(chunk):
             torch.save(feats[j].to(torch.float16).clone(), dst)
         done += len(chunk)

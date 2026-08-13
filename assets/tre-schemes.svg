@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" width="900" height="470" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <style>
+    .lbl { font-size: 12px; fill: #57606a; }
+    .ttl { font-size: 13.5px; font-weight: 600; fill: #1f2328; }
+    .sub { font-size: 11px; fill: #6e7781; }
+    .box { fill: #f6f8fa; stroke: #8c959f; stroke-width: 1; rx: 4; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+    .arrow { stroke: #8c959f; stroke-width: 1.4; fill: none; marker-end: url(#ah); }
+    .accentA { fill: #cf222e; }
+    .accentB { fill: #9a6700; }
+    .accentC { fill: #1a7f37; }
+    .slot { fill: #fff8c5; stroke: #d4a72c; stroke-width: 1.2; rx: 3; }
+    .outA { fill: #ffebe9; stroke: #cf222e; stroke-width: 1.2; rx: 4; }
+    .outB { fill: #fff8c5; stroke: #9a6700; stroke-width: 1.2; rx: 4; }
+    .outC { fill: #dafbe1; stroke: #1a7f37; stroke-width: 1.2; rx: 4; }
+  </style>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8c959f"/>
+    </marker>
+  </defs>
+
+  <text x="16" y="24" class="ttl">How the TRE feature is built — and what changes between the three schemes</text>
+  <text x="16" y="42" class="sub">Shared skeleton: encode the image, walk it to noise, reconstruct from every prefix, take the differences of consecutive reconstructions.</text>
+
+  <!-- shared skeleton -->
+  <rect x="16" y="58" width="868" height="86" class="box"/>
+  <text x="30" y="78" class="lbl" font-weight="600">Shared skeleton</text>
+  <rect x="30" y="88" width="84" height="34" class="box"/>
+  <text x="72" y="103" class="lbl" text-anchor="middle">image</text>
+  <text x="72" y="116" class="mono" text-anchor="middle" fill="#57606a">256×256</text>
+  <path d="M 118 105 L 148 105" class="arrow"/>
+  <rect x="152" y="88" width="92" height="34" class="box"/>
+  <text x="198" y="103" class="lbl" text-anchor="middle">VAE encode</text>
+  <text x="198" y="116" class="mono" text-anchor="middle" fill="#57606a">x₀ 4×32×32</text>
+  <path d="M 248 105 L 278 105" class="arrow"/>
+  <rect x="282" y="88" width="150" height="34" class="box"/>
+  <text x="357" y="103" class="lbl" text-anchor="middle">forward: x₀ → x₁ … x₂₀</text>
+  <text x="357" y="116" class="sub" text-anchor="middle">noise level rises with t</text>
+  <path d="M 436 105 L 466 105" class="arrow"/>
+  <rect x="470" y="88" width="186" height="34" class="box"/>
+  <text x="563" y="102" class="lbl" text-anchor="middle">reverse from each prefix k</text>
+  <text x="563" y="116" class="mono" text-anchor="middle" fill="#57606a">x_k → … → w_k  (k=1..20)</text>
+  <path d="M 660 105 L 690 105" class="arrow"/>
+  <rect x="694" y="88" width="176" height="34" class="box"/>
+  <text x="782" y="102" class="lbl" text-anchor="middle">TRE = consecutive diffs</text>
+  <text x="782" y="116" class="mono" text-anchor="middle" fill="#57606a">w_{k−1} − w_k → (20,4,32,32)</text>
+
+  <!-- the slot -->
+  <rect x="196" y="158" width="508" height="40" class="slot"/>
+  <text x="450" y="175" class="lbl" text-anchor="middle" font-weight="600">One reverse step:
+    <tspan class="mono" font-weight="400">x_{t−1} = μ_θ(x_t, t) + η · σ_t · (noise slot)</tspan></text>
+  <text x="450" y="190" class="sub" text-anchor="middle">the three schemes differ only in η and in what fills the noise slot</text>
+
+  <!-- Scheme A -->
+  <rect x="16" y="216" width="868" height="72" class="box"/>
+  <circle cx="34" cy="238" r="7" class="accentA"/>
+  <text x="34" y="242" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">A</text>
+  <text x="50" y="242" class="ttl">replayed z_t</text>
+  <text x="156" y="242" class="sub">as published (η = 1)</text>
+  <text x="30" y="262" class="lbl">forward: each x_t drawn independently from x₀ with a fresh random ε_t</text>
+  <text x="30" y="278" class="lbl">slot ← <tspan class="mono">z_t</tspan>, solved backwards so the reverse step lands exactly on x_{t−1}</text>
+  <rect x="596" y="228" width="274" height="48" class="outA"/>
+  <text x="733" y="246" class="lbl" text-anchor="middle" font-weight="600">every w_k = x₀ by construction</text>
+  <text x="733" y="264" class="lbl" text-anchor="middle">TRE ≈ 0 — only float residue (std 2·10⁻⁴)</text>
+
+  <!-- Scheme B -->
+  <rect x="16" y="298" width="868" height="72" class="box"/>
+  <circle cx="34" cy="320" r="7" class="accentB"/>
+  <text x="34" y="324" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">B</text>
+  <text x="50" y="324" class="ttl">fresh common noise</text>
+  <text x="196" y="324" class="sub">attempted fix (η = 1)</text>
+  <text x="30" y="344" class="lbl">forward: same as A</text>
+  <text x="30" y="360" class="lbl">slot ← one pre-drawn random <tspan class="mono">ε</tspan> sequence, shared by every prefix</text>
+  <rect x="596" y="310" width="274" height="48" class="outB"/>
+  <text x="733" y="328" class="lbl" text-anchor="middle" font-weight="600">w_k genuinely differ…</text>
+  <text x="733" y="346" class="lbl" text-anchor="middle">…but by the random draw: TRE is noise (std 0.87)</text>
+
+  <!-- Scheme C -->
+  <rect x="16" y="380" width="868" height="76" class="box"/>
+  <circle cx="34" cy="402" r="7" class="accentC"/>
+  <text x="34" y="406" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">C</text>
+  <text x="50" y="406" class="ttl">deterministic</text>
+  <text x="146" y="406" class="sub">η = 0 — no stochastic term at all</text>
+  <text x="30" y="426" class="lbl">forward: DDIM inversion — x_t follows one trajectory driven by the model's own <tspan class="mono">ε_θ(x_t, t)</tspan></text>
+  <text x="30" y="442" class="lbl">slot ← nothing (the whole <tspan class="mono">η·σ_t·(·)</tspan> term vanishes); the round trip is exactly repeatable</text>
+  <rect x="596" y="392" width="274" height="52" class="outC"/>
+  <text x="733" y="410" class="lbl" text-anchor="middle" font-weight="600">w_k differ by inversion error</text>
+  <text x="733" y="428" class="lbl" text-anchor="middle">TRE = reconstruction error (std 0.20);</text>
+  <text x="733" y="441" class="lbl" text-anchor="middle">real images 17% larger than generated</text>
+</svg>

@@ -8,7 +8,7 @@ before reuse.
 | File | Role |
 | --- | --- |
 | `build_lists.py` | Build train/test list files (`<path>\t<label>`) from unpacked GenImage |
-| `extract_tre.py` | Batched TRE extraction. Default = paper-faithful z_t replay; `--fresh` = common-random-noise reconstruction (the improvement condition). `--shard k --nshards n` for multi-GPU splits |
+| `extract_tre.py` | Batched TRE extraction. Default = paper-faithful z_t replay; `--fresh` = common-random-noise reconstruction; `--eta0` = fully deterministic DDIM round trip. `--shard k --nshards n` for multi-GPU splits |
 | `driver_gpu.sh` / `driver_gpu_fresh.sh` | Per-GPU shard runners (train list, then each generator's test list) |
 | `orchestrate.sh` | Stage chain: wait for train features → train → wait for extraction → eval (`results.json`) → fresh extraction → fresh train/eval (`results_fresh.json`) |
 | `train_eval.py` | Ours_TRE classifier (temporal MHSA x spatial focusing → ResNet18-4ch, CE, Adam 1e-4) + per-generator Accuracy/AP evaluation |
