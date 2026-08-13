@@ -1,0 +1,21 @@
+{
+ "experiment": "3-class head (real / diffusion-fake / GAN-fake) on the eta=0 features",
+ "question": "does letting the head separate GAN fakes from diffusion fakes remove biggan's below-chance inversion (39.8% under scheme C)?",
+ "protocol": "trained on the first half of each of the six test generators' features (36k; biggan is the only GAN class member), same backbone and hyperparameters; binary accuracy collapses the two fake classes",
+ "caveat": "per-generator numbers below are computed over BOTH halves, i.e. they include the training half; the clean held-out figure is best_val_binary_acc (second halves only). Unlike the LOGO runs, every generator was seen in training here.",
+ "best_val_binary_acc": 0.543,
+ "per_generator": {
+  "adm": {"n": 12000, "acc3": 0.5835, "binary_acc": 0.5999, "ap": 0.6279, "scheme_c_binary_acc": 0.5065},
+  "biggan": {"n": 12000, "acc3": 0.4419, "binary_acc": 0.6339, "ap": 0.6827, "scheme_c_binary_acc": 0.3977},
+  "glide": {"n": 12000, "acc3": 0.5684, "binary_acc": 0.6082, "ap": 0.6434, "scheme_c_binary_acc": 0.4913},
+  "midjourney": {"n": 12000, "acc3": 0.5771, "binary_acc": 0.5863, "ap": 0.6171, "scheme_c_binary_acc": 0.5475},
+  "vqdm": {"n": 12000, "acc3": 0.5717, "binary_acc": 0.5727, "ap": 0.6007, "scheme_c_binary_acc": 0.5329},
+  "wukong": {"n": 12000, "acc3": 0.5724, "binary_acc": 0.5742, "ap": 0.5923, "scheme_c_binary_acc": 0.7853}
+ },
+ "observations": [
+  "biggan's inversion disappears: 39.8% (below chance) -> 63.4% binary / AP 0.68 once GAN-fake is its own class",
+  "the other non-SD generators also move above chance (57-61%) when they appear in training, consistent with the LOGO finding that presence in training is what matters",
+  "wukong drops from 78.5% (sdv1.4-trained model) to 57.4% here -- this run's training set contains no sdv1.4-scale SD data",
+  "clean held-out binary accuracy (val halves) is 54.3%, so absolute numbers remain modest; the result is directional (the inversion artefact is class-structure, not noise)"
+ ]
+}
