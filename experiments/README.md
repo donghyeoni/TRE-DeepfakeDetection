@@ -11,6 +11,9 @@ before reuse.
 | `extract_tre.py` | Batched TRE extraction. Default = paper-faithful z_t replay; `--fresh` = common-random-noise reconstruction; `--eta0` = fully deterministic DDIM round trip. `--shard k --nshards n` for multi-GPU splits |
 | `driver_gpu.sh` / `driver_gpu_fresh.sh` | Per-GPU shard runners (train list, then each generator's test list) |
 | `orchestrate.sh` | Stage chain: wait for train features → train → wait for extraction → eval (`results.json`) → fresh extraction → fresh train/eval (`results_fresh.json`) |
+| `logo_train.py` | Experiment 1: leave-one-generator-out over the six test generators (`--holdout <gen>`) |
+| `threeclass_train.py` | Experiment 3: real / diffusion-fake / GAN-fake head on the same features |
+| `ensemble_train.py` | Experiment 2: two inverters' features concatenated on the channel axis (`--mode ensemble`), or the second inverter alone (`--mode b`) |
 | `train_eval.py` | Ours_TRE classifier (temporal MHSA x spatial focusing → ResNet18-4ch, CE, Adam 1e-4) + per-generator Accuracy/AP evaluation |
 
 Environment: Python 3.11, torch 2.3.1+cu121, torchvision 0.18.1,
