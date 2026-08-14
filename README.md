@@ -20,14 +20,16 @@ the reconstruction is driven.
 | **A. Replayed noise** (as originally formulated) | 78.7% | 63.5% | **57.7%** |
 | **B. Fresh common noise** (attempted fix) | 96.3% | 50.7% | **50.1%** |
 | **C. Deterministic, η = 0** | — | 80.9% | **60.5%** |
+| **C + second inverter** (SD1.4 ++ SD1.5, 8 ch) | — | 80.2% | **62.5%** |
 
 Scheme C is the one that measures something real, but the mean hides the actual
-result — it splits sharply by generator family:
+result — it splits sharply by generator family, and adding a second inverter
+from the *same* family does not move it:
 
-| Scheme C, grouped | Mean acc |
-| --- | --- |
-| Stable-Diffusion-derived (sdv4, sdv5, wukong) — same family as the inverting model | **78.8%** |
-| Everything else (adm, biggan, glide, midjourney, vqdm) | **49.5%** |
+| Grouped | Scheme C | C + second inverter |
+| --- | --- | --- |
+| Stable-Diffusion-derived (sdv4, sdv5, wukong) — same family as the inverter | **78.8%** | **78.9%** |
+| Everything else (adm, biggan, glide, midjourney, vqdm) | **49.5%** | **52.7%** |
 
 Per generator, raw numbers in [`results/repro.json`](results/repro.json),
 [`results/fresh.json`](results/fresh.json) and [`results/eta0.json`](results/eta0.json).
@@ -41,6 +43,8 @@ The three SD-derived generators are marked ◆:
 | B: fresh — AP | .503 | .504 | .505 | .499 | .490 | .504 | .499 | .503 | — |
 | C: η = 0 — acc | **78.5** | **79.2** | **78.5** | 50.6 | 39.8 | 49.1 | 54.8 | 53.3 | **60.5** |
 | C: η = 0 — AP | **.863** | **.869** | **.861** | .510 | .360 | .481 | .560 | .542 | — |
+| C + 2nd inverter — acc | **79.3** | **79.2** | **78.2** | 52.9 | 45.5 | 53.8 | 55.3 | 55.9 | **62.5** |
+| C + 2nd inverter — AP | **.870** | **.877** | **.862** | .538 | .429 | .549 | .567 | .576 | — |
 
 **Condition A barely beats chance even in-domain (61.5%)** and drops to 54-60%
 on unseen generators. **Condition B is exactly chance everywhere** while fitting
@@ -102,11 +106,32 @@ Outside that family it collapses to chance, and on biggan it inverts (39.8%,
 AP 0.36) — a GAN's latents are not something an SD inverter round-trips the way
 it does its own samples, so the learned direction points the wrong way. So the
 three schemes fail for three different reasons: A has no signal, B has signal
-buried in noise, C has signal that is specific to one generator family. Chasing
-general detection from a single inverter's reconstruction error therefore looks
+buried in noise, C has signal that is specific to one generator family.
+
+Three follow-ups pinned down *why* C is family-bound, and each has its own file
+in [`results/`](results):
+
+- **Leave-one-generator-out** ([`logo.json`](results/logo.json)) — train on five
+  generators, test on the sixth, six times. Held-out accuracy is chance in every
+  split (mean 51.7%), and validation on the five *trained* generators only
+  reaches 51.8-58.2%. wukong falls from 78.5% to 50.4% once its training set is
+  the five non-SD generators. **Training diversity does not substitute for the
+  inverter's own family** — the bias lives in the feature, not the data mix.
+- **3-class head** ([`threeclass.json`](results/threeclass.json)) — predicting
+  real / diffusion-fake / GAN-fake removes biggan's inversion (39.8% → 63.4%,
+  AP 0.36 → 0.68). The anti-correlation was class structure, not noise.
+- **Two-inverter ensemble** ([`ensemble.json`](results/ensemble.json)) — SD 1.4
+  and SD 1.5 features concatenated on the channel axis. SD family unchanged
+  (78.8 → 78.9%), others barely move (49.5 → 52.7%). SD 1.5 alone scores the
+  same as SD 1.4 alone, so the two inverters see the same thing. The intended
+  second arm was SD 2.1, but every `stabilityai/*` repository is gated, so this
+  run cannot test a genuinely *different* family — which is exactly the
+  hypothesis that matters.
+
+Chasing general detection from one model family's reconstruction error looks
 like the wrong axis — see
-[`docs/ideas-generalization.md`](docs/ideas-generalization.md) for the directions
-that remain.
+[`docs/ideas-generalization.md`](docs/ideas-generalization.md) for what remains,
+and [`docs/REPRODUCTION.md`](docs/REPRODUCTION.md) to re-run any of it.
 
 Baseline numbers (STRE, NPR, DIRE, LaRE) are **not reproduced here**; cite them
 from their original papers, noting protocol differences.

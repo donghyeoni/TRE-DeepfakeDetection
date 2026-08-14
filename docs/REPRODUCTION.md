@@ -21,7 +21,7 @@ composition.
 | C | Deterministic, eta = 0 | does removing the stochastic term help? | Yes, but family-bound: 78-79% on SD-derived generators, ~49.5% elsewhere, biggan inverts to 39.8% |
 | 1 | Leave-one-generator-out | is C's bias a training artefact? | No — held-out accuracy is chance (mean 51.7%) no matter how the training set is mixed |
 | 3 | 3-class head (real / diffusion / GAN) | is biggan's inversion structural? | Yes — 39.8% -> 63.4% once GAN fakes get their own class |
-| 2 | Two-inverter ensemble | does a second inverter break the family bond? | see `results/ensemble.json` |
+| 2 | Two-inverter ensemble | does a second inverter break the family bond? | Not answered — the only public second inverter (SD 1.5) is the same family, and it changes nothing: 78.8 -> 78.9% on SD, 49.5 -> 52.7% elsewhere |
 
 Raw numbers live in `results/*.json`; nothing in the prose is rounded from a
 different source.
@@ -213,10 +213,27 @@ number is `best_val_binary_acc`.
 ### Experiment 2 — two-inverter ensemble
 
 Extract scheme C a second time with a different inverter, concatenate on the
-channel axis (`(20, 8, 32, 32)`), train the same skeleton widened to 8 channels.
-An SD1.5-only control runs alongside so that "ensemble effect" and "different
-inverter effect" stay separable. Extraction is another ~14 GPU-hours;
-training ~1 h. `results/ensemble.json`.
+channel axis (`(20, 8, 32, 32)`), train the same skeleton widened to 8 channels
+(`experiments/ensemble_train.py`). An SD1.5-only control runs alongside so that
+"ensemble effect" and "different inverter effect" stay separable. Extraction is
+another ~14 GPU-hours; training ~1 h. `results/ensemble.json`.
+
+```bash
+python experiments/extract_tre.py --list data/lists/train.txt \
+    --out features_sd15/train --batch 48 --eta0 \
+    --model stable-diffusion-v1-5/stable-diffusion-v1-5
+python experiments/ensemble_train.py --mode ensemble --gens sdv4 sdv5 \
+    --ckpt weights/ensemble.pt --results results_ensemble.json
+python experiments/ensemble_train.py --mode b --gens sdv4 sdv5 \
+    --ckpt weights/sd15_only.pt --results results_sd15only.json     # control
+```
+
+**This run does not answer its own question.** SD 1.5 is a continuation of
+SD 1.4, so both inverters belong to one family; the intended SD 2.1 arm is
+unreachable because `stabilityai/*` is gated. A real test needs an inverter from
+a different family — pixel-space ADM, or a GAN inversion — and the negative
+result here should be read as "same-family ensembling is useless", not as
+"ensembling is useless".
 
 ---
 

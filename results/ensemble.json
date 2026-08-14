@@ -1,0 +1,35 @@
+{
+ "experiment": "two-inverter ensemble on the eta=0 features",
+ "question": "does pairing a second inverter with SD 1.4 break scheme C's family bond?",
+ "protocol": "the two inverters' (T=20,4,32,32) tensors are concatenated on the channel axis into (T=20,8,32,32); same skeleton widened to 8 channels, same hyperparameters, trained on the sdv1.4 training split (60k) and evaluated on all eight generators",
+ "inverters": {
+  "a": "CompVis/stable-diffusion-v1-4",
+  "b": "stable-diffusion-v1-5/stable-diffusion-v1-5",
+  "note": "SD 2.1 was the intended second inverter but every stabilityai/* repository is gated (anonymous access returns 401). SD 1.5 is a continuation of 1.4, so the two inverters are the SAME family -- this bounds what the experiment can show."
+ },
+ "val_acc": {"ensemble": 0.8022, "sd15_only": 0.7978, "sd14_only": 0.8089},
+ "per_generator": {
+  "sdv4": {"n": 12000, "acc": 0.7928, "ap": 0.8699, "sd14_only_acc": 0.785, "sd15_only_acc": 0.7873},
+  "sdv5": {"n": 16000, "acc": 0.7916, "ap": 0.8772, "sd14_only_acc": 0.7924, "sd15_only_acc": 0.7869},
+  "wukong": {"n": 12000, "acc": 0.7818, "ap": 0.8617, "sd14_only_acc": 0.7853, "sd15_only_acc": null},
+  "adm": {"n": 12000, "acc": 0.5289, "ap": 0.5383, "sd14_only_acc": 0.5065, "sd15_only_acc": null},
+  "biggan": {"n": 12000, "acc": 0.4548, "ap": 0.4291, "sd14_only_acc": 0.3977, "sd15_only_acc": null},
+  "glide": {"n": 12000, "acc": 0.5383, "ap": 0.5488, "sd14_only_acc": 0.4913, "sd15_only_acc": null},
+  "midjourney": {"n": 12000, "acc": 0.5529, "ap": 0.5665, "sd14_only_acc": 0.5475, "sd15_only_acc": null},
+  "vqdm": {"n": 12000, "acc": 0.5593, "ap": 0.5761, "sd14_only_acc": 0.5329, "sd15_only_acc": null}
+ },
+ "mean_acc": 0.6251,
+ "summary": {
+  "sd_family_mean_acc": 0.7887,
+  "other_architectures_mean_acc": 0.5268,
+  "sd14_only_sd_family_mean": 0.7876,
+  "sd14_only_other_mean": 0.4952,
+  "note": "sdv4/sdv5/wukong are Stable-Diffusion-derived; adm/biggan/glide/midjourney/vqdm are not"
+ },
+ "observations": [
+  "SD family is unchanged: 78.9% vs 78.8% for the single inverter -- a same-family second inverter adds no information there",
+  "non-SD generators move from 49.5% to 52.7% on average, and biggan's inversion softens (39.8% -> 45.5%), but everything stays near chance",
+  "the SD1.5-only control matches SD1.4-only on sdv4/sdv5 (78.7/78.7 vs 78.5/79.2), confirming the two inverters see the same thing",
+  "the experiment cannot test the actual hypothesis: both inverters are Stable Diffusion. A genuinely different family (pixel-space ADM, or a GAN inverter) would be required, and the gated stabilityai repositories blocked the intended SD 2.1 arm"
+ ]
+}
