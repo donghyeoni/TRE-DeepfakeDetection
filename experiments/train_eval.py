@@ -10,7 +10,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
-sys.path.insert(0, "/home/j-i15a204/tre/repo")
+TRE_HOME = os.environ.get("TRE_HOME", os.path.expanduser("~/tre"))
+sys.path.insert(0, os.environ.get("TRE_REPO", os.path.join(TRE_HOME, "repo")))
 from src.models.resnet_baseline import TemporalAggregation, SpatialFocusing, ResNet18_4ch, AttentionClassifier
 
 DEVICE = torch.device("cuda:0")
@@ -52,14 +53,14 @@ def evaluate(model, loader):
 
 def main():
     apr = argparse.ArgumentParser()
-    apr.add_argument("--features", default="/home/j-i15a204/tre/features")
+    apr.add_argument("--features", default=os.path.join(TRE_HOME, "features"))
     apr.add_argument("--epochs", type=int, default=20)
     apr.add_argument("--batch", type=int, default=16)
     apr.add_argument("--lr", type=float, default=1e-4)
     apr.add_argument("--val-frac", type=float, default=0.03)
-    apr.add_argument("--ckpt", default="/home/j-i15a204/tre/weights/ours_tre.pt")
+    apr.add_argument("--ckpt", default=os.path.join(TRE_HOME, "weights", "ours_tre.pt"))
     apr.add_argument("--eval-only", action="store_true")
-    apr.add_argument("--results", default="/home/j-i15a204/tre/results.json")
+    apr.add_argument("--results", default=os.path.join(TRE_HOME, "results.json"))
     args = apr.parse_args()
 
     os.makedirs(os.path.dirname(args.ckpt), exist_ok=True)

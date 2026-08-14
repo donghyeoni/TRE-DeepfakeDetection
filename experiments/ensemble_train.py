@@ -16,7 +16,7 @@ Modes:
         --features-a features_eta0 --features-b features_sd15 \
         --gens adm biggan glide midjourney vqdm wukong
 
-Set TRE_REPO if the repository is not at /home/j-i15a204/tre/repo.
+Paths follow $TRE_HOME (default ~/tre); override TRE_REPO / TRE_FEATURES if needed.
 """
 import argparse, glob, json, os, sys, time
 import torch
@@ -24,7 +24,8 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from torchvision.models import resnet18
 
-REPO = os.environ.get("TRE_REPO", "/home/j-i15a204/tre/repo")
+TRE_HOME = os.environ.get("TRE_HOME", os.path.expanduser("~/tre"))
+REPO = os.environ.get("TRE_REPO", os.path.join(TRE_HOME, "repo"))
 sys.path.insert(0, REPO)
 from src.models.resnet_baseline import TemporalAggregation, SpatialFocusing
 
@@ -105,8 +106,8 @@ def evaluate(model, ds, batch=64):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--mode", choices=["ensemble", "b"], default="ensemble")
-    p.add_argument("--features-a", default="/home/j-i15a204/tre/features_eta0")
-    p.add_argument("--features-b", default="/home/j-i15a204/tre/features_sd15")
+    p.add_argument("--features-a", default=os.path.join(TRE_HOME, "features_eta0"))
+    p.add_argument("--features-b", default=os.path.join(TRE_HOME, "features_sd15"))
     p.add_argument("--gens", nargs="*", default=["sdv4", "sdv5"])
     p.add_argument("--epochs", type=int, default=20)
     p.add_argument("--batch", type=int, default=16)

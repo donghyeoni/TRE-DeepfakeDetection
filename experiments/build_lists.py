@@ -1,7 +1,8 @@
 """Build extraction list files from the unpacked GenImage data."""
 import glob, os, random
 
-BASE = "/home/j-i15a204/tre/data"
+BASE = os.environ.get("TRE_DATA",
+                      os.path.join(os.environ.get("TRE_HOME", os.path.expanduser("~/tre")), "data"))
 GEN_DIRS = {"adm": "adm_imagenet", "biggan": "biggan_imagenet", "glide": "glide_imagenet",
             "midjourney": "midjourney_imagenet", "sdv4": "sdv4_imagenet", "sdv5": "sdv5_imagenet",
             "vqdm": "vqdm_imagenet", "wukong": "wukong_imagenet"}

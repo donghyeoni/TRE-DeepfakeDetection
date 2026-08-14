@@ -34,6 +34,21 @@ different source.
 
 ## 1. Environment
 
+On a freshly assigned machine, `experiments/bootstrap.sh` does everything in this
+section and the next — venv, repo, archives, file lists — and prints the
+extraction command to run afterwards:
+
+```bash
+git clone https://github.com/donghyeoni/TRE-DeepfakeDetection
+bash TRE-DeepfakeDetection/experiments/bootstrap.sh          # env + test data (25 GB)
+WITH_TRAIN=1 bash TRE-DeepfakeDetection/experiments/bootstrap.sh   # + train data (96 GB)
+```
+
+Every script resolves paths from **`$TRE_HOME`** (default `~/tre`); nothing is
+hardcoded to a particular host or account. Override it, or the narrower
+`TRE_REPO` / `TRE_DATA` / `TRE_FEATURES`, if the layout differs. The rest of this
+section explains what bootstrap installs and why those versions.
+
 ```
 Python 3.11
 torch 2.3.1+cu121      torchvision 0.18.1

@@ -20,14 +20,15 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 
-REPO = os.environ.get("TRE_REPO", "/home/j-i15a401/tre/repo")
+TRE_HOME = os.environ.get("TRE_HOME", os.path.expanduser("~/tre"))
+REPO = os.environ.get("TRE_REPO", os.path.join(TRE_HOME, "repo"))
 sys.path.insert(0, REPO)
 from src.models.resnet_baseline import (TemporalAggregation, SpatialFocusing,
                                         ResNet18_4ch, AttentionClassifier)
 
 GENS = ["adm", "biggan", "glide", "midjourney", "vqdm", "wukong"]
 GAN = {"biggan"}
-ROOT = os.environ.get("TRE_FEATURES", "/home/j-i15a401/tre/features_eta0/test")
+ROOT = os.environ.get("TRE_FEATURES", os.path.join(TRE_HOME, "features_eta0", "test"))
 DEVICE = torch.device("cuda:0")
 # 0 = real, 1 = diffusion-fake, 2 = GAN-fake
 LABELS = {"real": 0, "diffusion": 1, "gan": 2}

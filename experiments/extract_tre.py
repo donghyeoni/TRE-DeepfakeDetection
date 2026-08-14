@@ -11,7 +11,8 @@ import torch
 from PIL import Image
 from torchvision import transforms
 
-sys.path.insert(0, "/home/j-i15a204/tre/repo")
+TRE_HOME = os.environ.get("TRE_HOME", os.path.expanduser("~/tre"))
+sys.path.insert(0, os.environ.get("TRE_REPO", os.path.join(TRE_HOME, "repo")))
 from src import config
 from src.data.inversion import forward_step, get_variance, reverse_step
 
