@@ -39,9 +39,9 @@ section and the next — venv, repo, archives, file lists — and prints the
 extraction command to run afterwards:
 
 ```bash
-git clone https://github.com/donghyeoni/TRE-DeepfakeDetection
-bash TRE-DeepfakeDetection/experiments/bootstrap.sh          # env + test data (25 GB)
-WITH_TRAIN=1 bash TRE-DeepfakeDetection/experiments/bootstrap.sh   # + train data (96 GB)
+git clone https://github.com/donghyeoni/tre-deepfake-detection
+bash tre-deepfake-detection/experiments/bootstrap.sh          # env + test data (25 GB)
+WITH_TRAIN=1 bash tre-deepfake-detection/experiments/bootstrap.sh   # + train data (96 GB)
 ```
 
 Every script resolves paths from **`$TRE_HOME`** (default `~/tre`); nothing is

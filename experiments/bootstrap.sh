@@ -11,7 +11,7 @@ set -e
 TRE_HOME="${TRE_HOME:-$HOME/tre}"
 PYTHON="${PYTHON:-python3}"
 WITH_TRAIN="${WITH_TRAIN:-0}"
-REPO_URL="https://github.com/donghyeoni/TRE-DeepfakeDetection"
+REPO_URL="https://github.com/donghyeoni/tre-deepfake-detection"
 
 log(){ echo "[bootstrap $(date +%H:%M:%S)] $1"; }
 mkdir -p "$TRE_HOME"
